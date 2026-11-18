@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-obsidian-950: #0b1215;
+  --color-obsidian-900: #111b20;
+  --color-obsidian-800: #1b2830;
+  --color-cobalt-700: #1e40af;
+  --color-cobalt-600: #1d4ed8;
+  --color-cobalt-500: #2563eb;
+  --color-cobalt-400: #60a5fa;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-sans);
+    background-color: #f8fafc;
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes signalFlow {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+@keyframes signalFlowSlow {
+  to {
+    stroke-dashoffset: -56;
+  }
+}
+
+.animate-signal-flow {
+  stroke-dasharray: 6 6;
+  animation: signalFlow 1.6s linear infinite;
+}
+
+.animate-signal-flow-slow {
+  stroke-dasharray: 8 10;
+  animation: signalFlowSlow 2.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-signal-flow,
+  .animate-signal-flow-slow {
+    animation: none !important;
+  }
+}

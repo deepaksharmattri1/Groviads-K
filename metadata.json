@@ -1,0 +1,6 @@
+{
+  "name": "GROVIADS — Business Growth & Technology Solutions",
+  "description": "Global business growth, digital marketing, custom software engineering, AI automation, automated appointment scheduling, E2EE client messaging, and activity analytics platform for GROVIADS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
