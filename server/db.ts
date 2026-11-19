@@ -358,13 +358,13 @@ export async function ensureAdvisorKeyAndSeedData() {
       insertEv.run(ev[0], ev[1], ev[2], ev[3], ev[4], '{}', ev[5]);
     }
 
-    // Seed initial notification records to deepaksharmattri1@gmail.com
+    // Seed initial notification records to contact@groviads.com
     db.prepare(
       `INSERT INTO email_notifications (id, recipient, cc_recipient, event_type, subject, body_text, delivery_mode, delivery_status, error_message, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       'ntf_seed_01',
-      'deepaksharmattri1@gmail.com',
+      'contact@groviads.com',
       'contact@groviads.com',
       'appointment_booked',
       '[GROVIADS Booking] Free Consultation — Nadia Al-Mansoor',
@@ -375,4 +375,9 @@ export async function ensureAdvisorKeyAndSeedData() {
       isoMinusHours(16)
     );
   }
+
+  // Ensure previously persisted outbox rows use the official GROVIADS business email
+  db.prepare(
+    "UPDATE email_notifications SET recipient = 'contact@groviads.com' WHERE recipient != 'contact@groviads.com' AND recipient LIKE '%gmail.com'"
+  ).run();
 }

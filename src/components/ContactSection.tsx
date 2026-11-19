@@ -1,23 +1,30 @@
-import { CalendarCheck2, CheckCircle2, Lock, Mail, Send } from 'lucide-react';
+import { Bot, CalendarCheck2, CheckCircle2, Lock, Mail, Send } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
+import { useFirebase } from '../contexts/FirebaseContext';
 import { COMPANY_INFO, COUNTRIES, SERVICE_CATEGORIES } from '../data/groviadsProfile';
 import { validateLeadForm } from '../utils/validation';
+import { GlobalPresenceMap } from './GlobalPresenceMap';
 
 interface ContactSectionProps {
   clientId: string;
   selectedScopeServices: string[];
+  mapsApiKey?: string;
   onLeadSubmitted: (lead: { name: string; email: string; serviceInterest: string }) => void;
   onBookFreeCall: () => void;
   onOpenChat: () => void;
+  onOpenAiHub?: () => void;
 }
 
 export function ContactSection({
   clientId,
   selectedScopeServices,
+  mapsApiKey,
   onLeadSubmitted,
   onBookFreeCall,
   onOpenChat,
+  onOpenAiHub,
 }: ContactSectionProps) {
+  const { user, syncLeadToFirestore } = useFirebase();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState('United States');
@@ -33,6 +40,11 @@ export function ContactSection({
     email: string;
     notifiedTo: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (user?.displayName && !name) setName(user.displayName);
+    if (user?.email && !email) setEmail(user.email);
+  }, [user]);
 
   useEffect(() => {
     if (selectedScopeServices.length > 0) {
@@ -83,6 +95,18 @@ export function ContactSection({
         return;
       }
 
+      if (user?.emailVerified) {
+        void syncLeadToFirestore({
+          id: data.lead.id,
+          name: data.lead.name,
+          email: data.lead.email,
+          country: data.lead.country,
+          phone: data.lead.phone,
+          serviceInterest: data.lead.service_interest,
+          challenges: data.lead.challenges,
+        });
+      }
+
       setSubmittedConfirmation({
         leadId: data.lead.id,
         name: data.lead.name,
@@ -122,8 +146,9 @@ export function ContactSection({
                 Tell us your business goals and technical challenges
               </h1>
               <p className="text-sm sm:text-base text-slate-300 mt-4 leading-relaxed">
-                Every inquiry is stored securely in our relational database, triggers an instant
-                owner email alert, and receives an advisory response within 24 hours.
+                Every inquiry is stored securely in our database, syncs with your cloud account when
+                signed in, triggers an instant owner email alert, and receives an advisory response
+                within 24 hours.
               </p>
             </div>
             <button
@@ -149,7 +174,7 @@ export function ContactSection({
                   <div>
                     <p className="text-sm font-semibold text-[#0B1215]">Direct Advisory Contact</p>
                     <p className="text-xs text-slate-600 mt-0.5">
-                      {COMPANY_INFO.email} · Alerts routed to {COMPANY_INFO.ownerNotificationEmail}
+                      {COMPANY_INFO.email} · Advisory follow-up {COMPANY_INFO.followUpSla.toLowerCase()}
                     </p>
                   </div>
                 </div>
@@ -171,14 +196,28 @@ export function ContactSection({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={onBookFreeCall}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B1215] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-              >
-                <CalendarCheck2 className="w-4 h-4 text-[#1D4ED8]" />
-                Prefer to pick a live calendar slot? Book Free Consultation →
-              </button>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={onBookFreeCall}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B1215] hover:text-[#1D4ED8] transition-colors cursor-pointer"
+                >
+                  <CalendarCheck2 className="w-4 h-4 text-[#1D4ED8]" />
+                  Prefer to pick a live calendar slot? Book Free Consultation →
+                </button>
+                {onOpenAiHub && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={onOpenAiHub}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-[#1D4ED8] hover:text-[#1E40AF] transition-colors cursor-pointer"
+                    >
+                      <Bot className="w-4 h-4" />
+                      Want instant AI scoping or market research? Open AI Hub →
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Enquiry Form Column */}
@@ -365,6 +404,10 @@ export function ContactSection({
                 </form>
               </div>
             </div>
+          </div>
+
+          <div className="mt-14">
+            <GlobalPresenceMap apiKey={mapsApiKey} />
           </div>
         </div>
       </section>

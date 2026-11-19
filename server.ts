@@ -14,6 +14,14 @@ import {
   validateLeadForm,
 } from './src/utils/validation';
 import { db, ensureAdvisorKeyAndSeedData } from './server/db';
+import {
+  normalizeGeminiError,
+  runMapsGroundedQuery,
+  runMultiTurnChat,
+  runSearchGroundedQuery,
+  type ChatRolePreset,
+  type FreeChatModel,
+} from './server/gemini';
 import { dispatchOwnerNotification, getNotificationConfig } from './server/mailer';
 
 dotenv.config();
@@ -62,12 +70,15 @@ async function startServer() {
     }
 
     const cfg = getNotificationConfig();
+    const mapsApiKey =
+      process.env.VITE_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '';
     res.json({
       advisorPublicKey: advisorRow ? JSON.parse(advisorRow.public_key_jwk) : null,
       advisorFingerprint: advisorRow?.fingerprint || null,
       visitor,
       notificationTarget: cfg.ownerEmail,
       smtpConfigured: cfg.smtpConfigured,
+      mapsApiKey,
     });
   });
 
@@ -672,6 +683,88 @@ async function startServer() {
       bodyText: `This verification confirms that new leads, consultation bookings, returning-user alerts, and E2EE message notifications are routed to ${cfg.ownerEmail} (CC: ${cfg.companyEmail}).`,
     });
     res.json({ notification: result });
+  });
+
+  // Server-Side Gemini AI Advisory Endpoints
+  app.post('/api/ai/chat', async (req, res) => {
+    const body = req.body || {};
+    const message = String(body.message || '').trim();
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required.' });
+    }
+    const allowedModels = new Set<FreeChatModel>(['gemini-4-hydrogen', 'gemini-3.1-flash-lite']);
+    const model: FreeChatModel = allowedModels.has(body.model)
+      ? body.model
+      : 'gemini-4-hydrogen';
+    const allowedRoles = new Set<ChatRolePreset>([
+      'strategist',
+      'architect',
+      'analyst',
+      'concierge',
+    ]);
+    const rolePreset: ChatRolePreset = allowedRoles.has(body.rolePreset)
+      ? body.rolePreset
+      : 'strategist';
+    const history = Array.isArray(body.history)
+      ? body.history
+          .filter(
+            (h: unknown): h is { role: 'user' | 'model'; text: string } =>
+              Boolean(h) &&
+              typeof h === 'object' &&
+              ((h as { role?: string }).role === 'user' ||
+                (h as { role?: string }).role === 'model') &&
+              typeof (h as { text?: unknown }).text === 'string'
+          )
+          .slice(-24)
+      : [];
+
+    try {
+      const result = await runMultiTurnChat({
+        history,
+        message,
+        rolePreset,
+        model,
+        thinkingDepth: body.thinkingDepth === 'high' ? 'high' : 'low',
+      });
+      res.json(result);
+    } catch (error) {
+      const normalized = normalizeGeminiError(error);
+      res.status(normalized.status).json({ error: normalized.message });
+    }
+  });
+
+  app.post('/api/ai/search-grounding', async (req, res) => {
+    const prompt = String(req.body?.prompt || '').trim();
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required.' });
+    }
+    try {
+      const result = await runSearchGroundedQuery(prompt);
+      res.json(result);
+    } catch (error) {
+      const normalized = normalizeGeminiError(error);
+      res.status(normalized.status).json({ error: normalized.message });
+    }
+  });
+
+  app.post('/api/ai/maps-grounding', async (req, res) => {
+    const prompt = String(req.body?.prompt || '').trim();
+    if (!prompt) {
+      return res.status(400).json({ error: 'Location query is required.' });
+    }
+    const lat = req.body?.latitude !== undefined ? Number(req.body.latitude) : undefined;
+    const lng = req.body?.longitude !== undefined ? Number(req.body.longitude) : undefined;
+    try {
+      const result = await runMapsGroundedQuery({
+        prompt,
+        latitude: Number.isFinite(lat) ? lat : undefined,
+        longitude: Number.isFinite(lng) ? lng : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      const normalized = normalizeGeminiError(error);
+      res.status(normalized.status).json({ error: normalized.message });
+    }
   });
 
   if (process.env.NODE_ENV !== 'production') {

@@ -2,13 +2,18 @@ import {
   Activity,
   ArrowLeft,
   Calendar,
+  Cloud,
   Lock,
+  LogIn,
+  LogOut,
   Mail,
   RefreshCw,
   Send,
+  Sparkles,
   Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useFirebase } from '../contexts/FirebaseContext';
 import type { DashboardSummary, EncryptedMessageRecord } from '../types';
 import { decryptMessageE2EE, encryptMessageE2EE } from '../utils/crypto';
 
@@ -36,13 +41,24 @@ interface ExecutiveDashboardProps {
   clientId: string;
   onReturnToWebsite: () => void;
   onBookFreeCall: () => void;
+  onOpenAiHub?: () => void;
 }
 
 export function ExecutiveDashboard({
   clientId,
   onReturnToWebsite,
   onBookFreeCall,
+  onOpenAiHub,
 }: ExecutiveDashboardProps) {
+  const {
+    user,
+    isAdmin,
+    firestoreLeads,
+    firestoreAppointments,
+    advisoryBriefs,
+    signInWithGoogle,
+    signOutUser,
+  } = useFirebase();
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [viewScope, setViewScope] = useState<'agency' | 'client'>('agency');
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -414,6 +430,56 @@ export function ExecutiveDashboard({
             {/* Overview & Analytics Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-8">
+                {/* Firestore Cloud Sync & Google Account Status */}
+                <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <Cloud className="w-5 h-5 text-[#1D4ED8] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-[#0B1215]">
+                        {user
+                          ? `Firestore Cloud Sync Active (${user.email || user.displayName})`
+                          : 'Firestore Cloud Persistence & AI Briefs'}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-0.5 tabular-nums">
+                        {user
+                          ? `Role: ${isAdmin ? 'Agency Admin' : 'Client'} · ${firestoreLeads.length} synced leads · ${firestoreAppointments.length} synced bookings · ${advisoryBriefs.length} AI briefs`
+                          : 'Sign in with Google to synchronize project inquiries, consultations, and saved AI Advisory briefs across sessions.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    {onOpenAiHub && (
+                      <button
+                        type="button"
+                        onClick={onOpenAiHub}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0B1215] cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-[#1D4ED8]" />
+                        Open AI Hub
+                      </button>
+                    )}
+                    {user ? (
+                      <button
+                        type="button"
+                        onClick={() => void signOutUser()}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Sign Out
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void signInWithGoogle()}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold cursor-pointer"
+                      >
+                        <LogIn className="w-3.5 h-3.5" />
+                        Sign In with Google
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* 4 KPI Summary Strip */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   <div className="bg-white rounded-xl border border-slate-200 p-5">

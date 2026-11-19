@@ -1,5 +1,6 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
+import { AiAdvisoryHub } from './components/AiAdvisoryHub';
 import { BookingAndPaymentSection } from './components/BookingAndPaymentSection';
 import { ContactSection } from './components/ContactSection';
 import { ExecutiveDashboard } from './components/ExecutiveDashboard';
@@ -38,6 +39,8 @@ export default function App() {
   const [preselectedService, setPreselectedService] = useState<string | null>(null);
   const [advisorPublicKey, setAdvisorPublicKey] = useState<JsonWebKey | null>(null);
   const [advisorFingerprint, setAdvisorFingerprint] = useState<string | null>(null);
+  const [mapsApiKey, setMapsApiKey] = useState<string>('');
+  const [mapsQuotaExceeded, setMapsQuotaExceeded] = useState(false);
   const [visitor, setVisitor] = useState<VisitorProfile | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -50,11 +53,18 @@ export default function App() {
   };
 
   useEffect(() => {
+    const onQuotaExceeded = () => setMapsQuotaExceeded(true);
+    window.addEventListener('gmp-quota-exceeded', onQuotaExceeded);
+    return () => window.removeEventListener('gmp-quota-exceeded', onQuotaExceeded);
+  }, []);
+
+  useEffect(() => {
     fetch(`/api/bootstrap?clientId=${encodeURIComponent(clientId)}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.advisorPublicKey) setAdvisorPublicKey(data.advisorPublicKey);
         if (data.advisorFingerprint) setAdvisorFingerprint(data.advisorFingerprint);
+        if (data.mapsApiKey) setMapsApiKey(data.mapsApiKey);
         if (data.visitor) setVisitor(data.visitor);
       })
       .catch(() => {});
@@ -115,6 +125,23 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900">
+        {mapsQuotaExceeded && (
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
+            <span>
+              Google Maps Platform quota reached. If you are the app owner, visit{' '}
+              <a
+                href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold text-amber-950 hover:text-amber-800"
+              >
+                maps developer site
+              </a>{' '}
+              for instructions to update your account.
+            </span>
+          </div>
+        )}
+
         <Navbar
           currentRoute={currentRoute}
           onNavigate={(route) => navigate(route)}
@@ -126,6 +153,7 @@ export default function App() {
             clientId={clientId}
             onReturnToWebsite={() => navigate('/')}
             onBookFreeCall={() => handleBookFreeCall()}
+            onOpenAiHub={() => navigate('/ai-hub')}
           />
         ) : (
           <main className="flex-1 flex flex-col">
@@ -164,6 +192,13 @@ export default function App() {
                   />
                 )}
 
+                {currentRoute === '/ai-hub' && (
+                  <AiAdvisoryHub
+                    mapsApiKey={mapsApiKey}
+                    onBookFreeCall={() => handleBookFreeCall()}
+                  />
+                )}
+
                 {currentRoute === '/consultation' && (
                   <BookingAndPaymentSection
                     clientId={clientId}
@@ -194,6 +229,7 @@ export default function App() {
                   <ContactSection
                     clientId={clientId}
                     selectedScopeServices={selectedScopeServices}
+                    mapsApiKey={mapsApiKey}
                     onLeadSubmitted={(lead) => {
                       setVisitor((prev) =>
                         prev
@@ -212,6 +248,7 @@ export default function App() {
                     }}
                     onBookFreeCall={() => handleBookFreeCall()}
                     onOpenChat={() => setChatOpen(true)}
+                    onOpenAiHub={() => navigate('/ai-hub')}
                   />
                 )}
               </motion.div>

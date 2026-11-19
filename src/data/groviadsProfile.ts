@@ -46,7 +46,7 @@ export const COMPANY_INFO = {
   tagline: 'Your Ideas. Our Expertise. Bigger Growth.',
   website: 'groviads.com',
   email: 'contact@groviads.com',
-  ownerNotificationEmail: 'deepaksharmattri1@gmail.com',
+  ownerNotificationEmail: 'contact@groviads.com',
   market: 'Worldwide',
   followUpSla: 'Within 24 hours',
   vision:

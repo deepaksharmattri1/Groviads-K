@@ -17,7 +17,7 @@ export interface NotificationPayload {
 }
 
 export function getNotificationConfig() {
-  const ownerEmail = process.env.NOTIFICATION_EMAIL?.trim() || 'deepaksharmattri1@gmail.com';
+  const ownerEmail = process.env.NOTIFICATION_EMAIL?.trim() || 'contact@groviads.com';
   const companyEmail = process.env.COMPANY_EMAIL?.trim() || 'contact@groviads.com';
   const smtpHost = process.env.SMTP_HOST?.trim() || '';
   const smtpPort = Number(process.env.SMTP_PORT || '587');

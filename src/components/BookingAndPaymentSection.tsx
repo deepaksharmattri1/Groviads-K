@@ -6,6 +6,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
+import { useFirebase } from '../contexts/FirebaseContext';
 import {
   COMPANY_INFO,
   COUNTRIES,
@@ -36,6 +37,7 @@ export function BookingAndPaymentSection({
   onVisitorIdentified,
   onAppointmentBooked,
 }: BookingAndPaymentSectionProps) {
+  const { user, syncAppointmentToFirestore } = useFirebase();
   const availableDates = getNextBusinessDates(6);
   const [selectedDate, setSelectedDate] = useState(availableDates[0]);
   const [slots, setSlots] = useState<{ time: string; available: boolean }[]>([]);
@@ -64,6 +66,11 @@ export function BookingAndPaymentSection({
   const [existingUserEmail, setExistingUserEmail] = useState('');
   const [identifyStatus, setIdentifyStatus] = useState<string | null>(null);
   const [userAppointments, setUserAppointments] = useState<AppointmentRecord[]>([]);
+
+  useEffect(() => {
+    if (user?.displayName && !name) setName(user.displayName);
+    if (user?.email && !email) setEmail(user.email);
+  }, [user]);
 
   useEffect(() => {
     if (preselectedService) {
@@ -236,6 +243,20 @@ export function BookingAndPaymentSection({
       setConfirmedBooking(data.appointment);
       if (data.notification?.recipient) {
         setConfirmedRecipient(data.notification.recipient);
+      }
+      if (user?.emailVerified) {
+        void syncAppointmentToFirestore({
+          id: data.appointment.id,
+          name: data.appointment.name,
+          email: data.appointment.email,
+          phone: data.appointment.phone,
+          country: data.appointment.country,
+          serviceInterest: data.appointment.service_interest,
+          appointmentDate: data.appointment.appointment_date,
+          appointmentTime: data.appointment.appointment_time,
+          timezone: data.appointment.timezone,
+          notes: data.appointment.notes || '',
+        });
       }
       onAppointmentBooked(data.appointment);
       await fetchAvailability(selectedDate);

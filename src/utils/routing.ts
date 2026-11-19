@@ -2,6 +2,7 @@ export type AppRoute =
   | '/'
   | '/services'
   | '/portfolio'
+  | '/ai-hub'
   | '/consultation'
   | '/contact'
   | '/dashboard';
@@ -10,6 +11,7 @@ const VALID_ROUTES = new Set<AppRoute>([
   '/',
   '/services',
   '/portfolio',
+  '/ai-hub',
   '/consultation',
   '/contact',
   '/dashboard',
@@ -30,6 +32,8 @@ export function getPageMeta(route: AppRoute): { title: string; section: string }
       return { title: 'Services & Process — GROVIADS', section: 'services' };
     case '/portfolio':
       return { title: 'Solution Blueprints — GROVIADS', section: 'portfolio' };
+    case '/ai-hub':
+      return { title: 'AI Advisory Hub — GROVIADS', section: 'ai_hub' };
     case '/consultation':
       return { title: 'Free Strategy Consultation — GROVIADS', section: 'consultation' };
     case '/contact':

@@ -1,0 +1,208 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isEmailVerified() && request.auth.token.email == 'contact@groviads.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'hasBookedConsultation', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'role', 'hasBookedConsultation', 'createdAt', 'updatedAt'])
+        && data.uid == userId
+        && isValidId(data.uid)
+        && isValidString(data.displayName, 1, 120)
+        && isValidString(data.email, 3, 180)
+        && (!('photoURL' in data) || isValidString(data.photoURL, 0, 500))
+        && (data.role == 'client' || (data.role == 'admin' && isAdmin()))
+        && data.hasBookedConsultation is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['ownerUid', 'name', 'email', 'country', 'phone', 'serviceInterest', 'challenges', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerUid', 'name', 'email', 'country', 'phone', 'serviceInterest', 'challenges', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerUid)
+        && isValidString(data.name, 2, 120)
+        && isValidString(data.email, 3, 180)
+        && isValidString(data.country, 2, 100)
+        && isValidString(data.phone, 5, 40)
+        && isValidString(data.serviceInterest, 2, 160)
+        && isValidString(data.challenges, 10, 2000)
+        && data.status in ['new', 'contacted', 'proposal_sent', 'won', 'archived']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['ownerUid', 'name', 'email', 'phone', 'country', 'serviceInterest', 'appointmentDate', 'appointmentTime', 'timezone', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerUid', 'name', 'email', 'phone', 'country', 'serviceInterest', 'appointmentDate', 'appointmentTime', 'timezone', 'notes', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerUid)
+        && isValidString(data.name, 2, 120)
+        && isValidString(data.email, 3, 180)
+        && isValidString(data.phone, 5, 40)
+        && isValidString(data.country, 2, 100)
+        && isValidString(data.serviceInterest, 2, 160)
+        && isValidString(data.appointmentDate, 10, 10)
+        && data.appointmentDate.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && isValidString(data.appointmentTime, 4, 20)
+        && isValidString(data.timezone, 2, 80)
+        && (!('notes' in data) || isValidString(data.notes, 0, 1000))
+        && data.status in ['scheduled', 'completed', 'cancelled']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdvisoryBrief(data) {
+      return data.keys().hasAll(['ownerUid', 'title', 'mode', 'prompt', 'responseText', 'sources', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerUid', 'title', 'mode', 'prompt', 'responseText', 'sources', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerUid)
+        && isValidString(data.title, 2, 160)
+        && data.mode in ['chat', 'search_grounding', 'maps_grounding']
+        && isValidString(data.prompt, 1, 2000)
+        && isValidString(data.responseText, 1, 12000)
+        && data.sources is list
+        && data.sources.size() <= 10
+        && (data.sources.size() == 0 || (data.sources[0] is string && data.sources[0].size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isEmailVerified()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (incoming().role == 'client' || isAdmin());
+      allow update: if isEmailVerified()
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (isOwner(userId)
+            && incoming().role == existing().role
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'hasBookedConsultation', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    match /leads/{leadId} {
+      allow get: if isValidId(leadId) && isSignedIn() && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerUid == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified()
+        && isValidId(leadId)
+        && isValidLead(incoming())
+        && incoming().ownerUid == request.auth.uid
+        && incoming().status == 'new'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isEmailVerified()
+        && isValidId(leadId)
+        && isValidLead(incoming())
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (existing().ownerUid == request.auth.uid
+            && !(existing().status in ['won', 'archived'])
+            && incoming().status == existing().status
+            && incoming().diff(existing()).affectedKeys().hasOnly(['challenges', 'phone', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(leadId);
+    }
+
+    match /appointments/{appointmentId} {
+      allow get: if isValidId(appointmentId) && isSignedIn() && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerUid == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified()
+        && isValidId(appointmentId)
+        && isValidAppointment(incoming())
+        && incoming().ownerUid == request.auth.uid
+        && incoming().status == 'scheduled'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isEmailVerified()
+        && isValidId(appointmentId)
+        && isValidAppointment(incoming())
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (existing().ownerUid == request.auth.uid
+            && !(existing().status in ['completed', 'cancelled'])
+            && (
+              (incoming().status == 'scheduled'
+                && incoming().diff(existing()).affectedKeys().hasOnly(['appointmentDate', 'appointmentTime', 'timezone', 'notes', 'updatedAt'])) ||
+              (incoming().status == 'cancelled'
+                && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
+            ))
+        );
+      allow delete: if isAdmin() && isValidId(appointmentId);
+    }
+
+    match /advisoryBriefs/{briefId} {
+      allow get: if isValidId(briefId) && isSignedIn() && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerUid == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified()
+        && isValidId(briefId)
+        && isValidAdvisoryBrief(incoming())
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isEmailVerified()
+        && isValidId(briefId)
+        && isValidAdvisoryBrief(incoming())
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (existing().ownerUid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'updatedAt']))
+        );
+      allow delete: if isValidId(briefId) && isSignedIn() && (existing().ownerUid == request.auth.uid || isAdmin());
+    }
+  }
+}
