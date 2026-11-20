@@ -25,7 +25,12 @@ export function getNotificationConfig() {
   const smtpPass = process.env.SMTP_PASS?.trim() || '';
   const smtpFrom =
     process.env.SMTP_FROM?.trim() || `GROVIADS Notifications <${companyEmail}>`;
-  const smtpConfigured = Boolean(smtpHost && smtpUser && smtpPass);
+  const isValidHost =
+    Boolean(smtpHost) &&
+    !smtpHost.includes('@') &&
+    !/\s/.test(smtpHost) &&
+    smtpHost.includes('.');
+  const smtpConfigured = Boolean(isValidHost && smtpUser && smtpPass);
 
   return {
     ownerEmail,
@@ -55,6 +60,9 @@ export async function dispatchOwnerNotification(payload: NotificationPayload) {
         host: cfg.smtpHost,
         port: cfg.smtpPort,
         secure: cfg.smtpPort === 465,
+        connectionTimeout: 4000,
+        greetingTimeout: 4000,
+        socketTimeout: 5000,
         auth: {
           user: cfg.smtpUser,
           pass: cfg.smtpPass,

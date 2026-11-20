@@ -328,7 +328,7 @@ export function PortfolioSection({ onBookForBlueprint, onTrackEvent }: Portfolio
                   }}
                   className="px-5 py-2.5 rounded-lg bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-sm font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  Book Free Call for Similar Scope
+                  Send Enquiry for Similar Scope
                 </button>
               </div>
             </div>

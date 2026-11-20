@@ -3,23 +3,21 @@ export type AppRoute =
   | '/services'
   | '/portfolio'
   | '/ai-hub'
-  | '/consultation'
-  | '/contact'
-  | '/dashboard';
+  | '/contact';
 
 const VALID_ROUTES = new Set<AppRoute>([
   '/',
   '/services',
   '/portfolio',
   '/ai-hub',
-  '/consultation',
   '/contact',
-  '/dashboard',
 ]);
 
-export function parseAppRoute(pathname: string, hash = ''): AppRoute {
-  if (hash === '#dashboard') return '/dashboard';
+export function parseAppRoute(pathname: string, _hash = ''): AppRoute {
   const normalized = pathname.replace(/\/+$/, '') || '/';
+  if (normalized === '/enquiry' || normalized === '/consultation') {
+    return '/contact';
+  }
   if (VALID_ROUTES.has(normalized as AppRoute)) {
     return normalized as AppRoute;
   }
@@ -34,12 +32,8 @@ export function getPageMeta(route: AppRoute): { title: string; section: string }
       return { title: 'Solution Blueprints — GROVIADS', section: 'portfolio' };
     case '/ai-hub':
       return { title: 'AI Advisory Hub — GROVIADS', section: 'ai_hub' };
-    case '/consultation':
-      return { title: 'Free Strategy Consultation — GROVIADS', section: 'consultation' };
     case '/contact':
-      return { title: 'Project Enquiry & Contact — GROVIADS', section: 'contact' };
-    case '/dashboard':
-      return { title: 'Activity Console — GROVIADS', section: 'dashboard' };
+      return { title: 'Project Enquiry — GROVIADS', section: 'contact' };
     default:
       return { title: 'GROVIADS — Business Growth & Technology Solutions', section: 'home' };
   }

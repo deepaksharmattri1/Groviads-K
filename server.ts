@@ -324,85 +324,90 @@ async function startServer() {
   });
 
   app.post('/api/leads', async (req, res) => {
-    const body = req.body || {};
-    const validation = validateLeadForm({
-      name: String(body.name || ''),
-      email: String(body.email || ''),
-      country: String(body.country || ''),
-      phone: String(body.phone || ''),
-      serviceInterest: String(body.serviceInterest || ''),
-      challenges: String(body.challenges || ''),
-    });
+    try {
+      const body = req.body || {};
+      const validation = validateLeadForm({
+        name: String(body.name || ''),
+        email: String(body.email || ''),
+        country: String(body.country || ''),
+        phone: String(body.phone || ''),
+        serviceInterest: String(body.serviceInterest || ''),
+        challenges: String(body.challenges || ''),
+      });
 
-    if (!validation.valid) {
-      return res.status(400).json({ error: 'Validation failed', errors: validation.errors });
+      if (!validation.valid) {
+        return res.status(400).json({ error: 'Validation failed', errors: validation.errors });
+      }
+
+      const id = `ld_${crypto.randomBytes(5).toString('hex')}`;
+      const now = new Date().toISOString();
+      const clientId = String(body.clientId || `cli_${crypto.randomBytes(4).toString('hex')}`);
+      const cleanEmail = String(body.email).trim().toLowerCase();
+
+      db.prepare(
+        `INSERT INTO leads (id, client_id, name, email, country, phone, service_interest, challenges, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)`
+      ).run(
+        id,
+        clientId,
+        String(body.name).trim(),
+        cleanEmail,
+        String(body.country).trim(),
+        String(body.phone).trim(),
+        String(body.serviceInterest).trim(),
+        String(body.challenges).trim(),
+        now
+      );
+
+      db.prepare(
+        `INSERT INTO visitor_profiles (client_id, name, email, country, phone, visit_count, has_booked_free_consult, last_seen_at, created_at)
+         VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?)
+         ON CONFLICT(client_id) DO UPDATE SET name=excluded.name, email=excluded.email, country=excluded.country, phone=excluded.phone, last_seen_at=excluded.last_seen_at`
+      ).run(
+        clientId,
+        String(body.name).trim(),
+        cleanEmail,
+        String(body.country).trim(),
+        String(body.phone).trim(),
+        now,
+        now
+      );
+
+      db.prepare(
+        'INSERT INTO analytics_events (id, client_id, event_type, section, label, metadata_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).run(
+        `ev_${crypto.randomBytes(5).toString('hex')}`,
+        clientId,
+        'lead_submitted',
+        'contact',
+        String(body.serviceInterest).trim(),
+        JSON.stringify({ leadId: id, country: String(body.country).trim() }),
+        now
+      );
+
+      const notification = await dispatchOwnerNotification({
+        eventType: 'new_lead',
+        clientEmail: cleanEmail,
+        subject: `[GROVIADS New Lead] ${String(body.name).trim()} — ${String(body.serviceInterest).trim()}`,
+        bodyText: [
+          `New client inquiry submitted via GROVIADS:`,
+          `Lead ID: ${id}`,
+          `Name: ${String(body.name).trim()}`,
+          `Email: ${cleanEmail}`,
+          `Country: ${String(body.country).trim()}`,
+          `Phone / WhatsApp: ${String(body.phone).trim()}`,
+          `Service of Interest: ${String(body.serviceInterest).trim()}`,
+          `Challenges & Goals: ${String(body.challenges).trim()}`,
+          `SLA Reminder: Follow up within 24 hours.`,
+        ].join('\n'),
+      });
+
+      const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(id);
+      return res.status(201).json({ lead, notification });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to save project enquiry.';
+      return res.status(500).json({ error: message });
     }
-
-    const id = `ld_${crypto.randomBytes(5).toString('hex')}`;
-    const now = new Date().toISOString();
-    const clientId = String(body.clientId || `cli_${crypto.randomBytes(4).toString('hex')}`);
-    const cleanEmail = String(body.email).trim().toLowerCase();
-
-    db.prepare(
-      `INSERT INTO leads (id, client_id, name, email, country, phone, service_interest, challenges, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)`
-    ).run(
-      id,
-      clientId,
-      String(body.name).trim(),
-      cleanEmail,
-      String(body.country).trim(),
-      String(body.phone).trim(),
-      String(body.serviceInterest).trim(),
-      String(body.challenges).trim(),
-      now
-    );
-
-    db.prepare(
-      `INSERT INTO visitor_profiles (client_id, name, email, country, phone, visit_count, has_booked_free_consult, last_seen_at, created_at)
-       VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?)
-       ON CONFLICT(client_id) DO UPDATE SET name=excluded.name, email=excluded.email, country=excluded.country, phone=excluded.phone, last_seen_at=excluded.last_seen_at`
-    ).run(
-      clientId,
-      String(body.name).trim(),
-      cleanEmail,
-      String(body.country).trim(),
-      String(body.phone).trim(),
-      now,
-      now
-    );
-
-    db.prepare(
-      'INSERT INTO analytics_events (id, client_id, event_type, section, label, metadata_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(
-      `ev_${crypto.randomBytes(5).toString('hex')}`,
-      clientId,
-      'lead_submitted',
-      'contact',
-      String(body.serviceInterest).trim(),
-      JSON.stringify({ leadId: id, country: String(body.country).trim() }),
-      now
-    );
-
-    const notification = await dispatchOwnerNotification({
-      eventType: 'new_lead',
-      clientEmail: cleanEmail,
-      subject: `[GROVIADS New Lead] ${String(body.name).trim()} — ${String(body.serviceInterest).trim()}`,
-      bodyText: [
-        `New client inquiry submitted via GROVIADS:`,
-        `Lead ID: ${id}`,
-        `Name: ${String(body.name).trim()}`,
-        `Email: ${cleanEmail}`,
-        `Country: ${String(body.country).trim()}`,
-        `Phone / WhatsApp: ${String(body.phone).trim()}`,
-        `Service of Interest: ${String(body.serviceInterest).trim()}`,
-        `Challenges & Goals: ${String(body.challenges).trim()}`,
-        `SLA Reminder: Follow up within 24 hours.`,
-      ].join('\n'),
-    });
-
-    const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(id);
-    res.status(201).json({ lead, notification });
   });
 
   app.patch('/api/leads/:id', (req, res) => {

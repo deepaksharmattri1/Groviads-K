@@ -26,14 +26,17 @@ export interface ValidationResult {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const PHONE_RE = /^[+\d][\d\s().-]{6,20}$/;
+const PHONE_CHARS_RE = /^[+\d\s().-]+$/;
 
 export function validateEmail(email: string): boolean {
   return EMAIL_RE.test(email.trim());
 }
 
 export function validatePhone(phone: string): boolean {
-  return PHONE_RE.test(phone.trim());
+  const trimmed = phone.trim();
+  if (!PHONE_CHARS_RE.test(trimmed)) return false;
+  const digits = trimmed.replace(/\D/g, '');
+  return digits.length >= 6 && digits.length <= 20;
 }
 
 export function validateLeadForm(input: LeadFormInput): ValidationResult {
@@ -42,19 +45,19 @@ export function validateLeadForm(input: LeadFormInput): ValidationResult {
     errors.name = 'Please enter your full name (at least 2 characters).';
   }
   if (!validateEmail(input.email)) {
-    errors.email = 'Please enter a valid business or personal email address.';
+    errors.email = 'Please enter a valid email address (e.g. you@company.com).';
   }
   if (!input.country.trim()) {
     errors.country = 'Please select your country.';
   }
   if (!validatePhone(input.phone)) {
-    errors.phone = 'Please enter a valid phone or WhatsApp number with country code.';
+    errors.phone = 'Please enter a valid phone or WhatsApp number (at least 6 digits).';
   }
   if (!input.serviceInterest.trim()) {
     errors.serviceInterest = 'Please select a service of interest.';
   }
-  if (!input.challenges.trim() || input.challenges.trim().length < 10) {
-    errors.challenges = 'Please briefly describe your business challenges or goals (10+ characters).';
+  if (!input.challenges.trim() || input.challenges.trim().length < 6) {
+    errors.challenges = 'Please briefly describe your project or enquiry (at least 6 characters).';
   }
   return { valid: Object.keys(errors).length === 0, errors };
 }

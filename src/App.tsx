@@ -1,9 +1,7 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { AiAdvisoryHub } from './components/AiAdvisoryHub';
-import { BookingAndPaymentSection } from './components/BookingAndPaymentSection';
 import { ContactSection } from './components/ContactSection';
-import { ExecutiveDashboard } from './components/ExecutiveDashboard';
 import { Footer } from './components/Footer';
 import { HeroSection } from './components/HeroSection';
 import { LiveChatWidget } from './components/LiveChatWidget';
@@ -106,12 +104,12 @@ export default function App() {
     trackEvent('navigation', getPageMeta(route).section, `Navigated to ${route}`);
   };
 
-  const handleBookFreeCall = (serviceTitle?: string) => {
+  const handleOpenEnquiry = (serviceTitle?: string) => {
     if (serviceTitle) {
       setPreselectedService(serviceTitle);
     }
-    trackEvent('cta_click', 'booking', serviceTitle || 'Book Free Consultation');
-    navigate('/consultation', { serviceTitle });
+    trackEvent('cta_click', 'contact', serviceTitle || 'Send Project Enquiry');
+    navigate('/contact', { serviceTitle });
   };
 
   const handleToggleScopeService = (serviceTitle: string) => {
@@ -145,118 +143,83 @@ export default function App() {
         <Navbar
           currentRoute={currentRoute}
           onNavigate={(route) => navigate(route)}
-          onBookFreeCall={() => handleBookFreeCall()}
+          onOpenEnquiry={() => handleOpenEnquiry()}
         />
 
-        {currentRoute === '/dashboard' ? (
-          <ExecutiveDashboard
-            clientId={clientId}
-            onReturnToWebsite={() => navigate('/')}
-            onBookFreeCall={() => handleBookFreeCall()}
-            onOpenAiHub={() => navigate('/ai-hub')}
-          />
-        ) : (
-          <main className="flex-1 flex flex-col">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentRoute}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                className="flex-1"
-              >
-                {currentRoute === '/' && (
-                  <HeroSection
-                    visitor={visitor}
-                    onNavigate={navigate}
-                    onBookFreeCall={handleBookFreeCall}
-                  />
-                )}
+        <main className="flex-1 flex flex-col">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentRoute}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              className="flex-1"
+            >
+              {currentRoute === '/' && (
+                <HeroSection
+                  visitor={visitor}
+                  onNavigate={navigate}
+                  onOpenEnquiry={handleOpenEnquiry}
+                />
+              )}
 
-                {currentRoute === '/services' && (
-                  <ServicesAndProcessSection
-                    initialPillar={servicesPillar}
-                    selectedScopeServices={selectedScopeServices}
-                    onToggleScopeService={handleToggleScopeService}
-                    onSelectServiceForBooking={(title) => handleBookFreeCall(title)}
-                    onBookWithScope={() => handleBookFreeCall()}
-                    onEnquireWithScope={() => navigate('/contact')}
-                  />
-                )}
+              {currentRoute === '/services' && (
+                <ServicesAndProcessSection
+                  initialPillar={servicesPillar}
+                  selectedScopeServices={selectedScopeServices}
+                  onToggleScopeService={handleToggleScopeService}
+                  onSelectServiceForBooking={(title) => handleOpenEnquiry(title)}
+                  onBookWithScope={() => handleOpenEnquiry()}
+                  onEnquireWithScope={() => handleOpenEnquiry()}
+                />
+              )}
 
-                {currentRoute === '/portfolio' && (
-                  <PortfolioSection
-                    onBookForBlueprint={(title) => handleBookFreeCall(title)}
-                    onTrackEvent={trackEvent}
-                  />
-                )}
+              {currentRoute === '/portfolio' && (
+                <PortfolioSection
+                  onBookForBlueprint={(title) => handleOpenEnquiry(title)}
+                  onTrackEvent={trackEvent}
+                />
+              )}
 
-                {currentRoute === '/ai-hub' && (
-                  <AiAdvisoryHub
-                    mapsApiKey={mapsApiKey}
-                    onBookFreeCall={() => handleBookFreeCall()}
-                  />
-                )}
+              {currentRoute === '/ai-hub' && (
+                <AiAdvisoryHub
+                  mapsApiKey={mapsApiKey}
+                  onOpenEnquiry={() => handleOpenEnquiry()}
+                />
+              )}
 
-                {currentRoute === '/consultation' && (
-                  <BookingAndPaymentSection
-                    clientId={clientId}
-                    preselectedService={preselectedService}
-                    selectedScopeServices={selectedScopeServices}
-                    visitor={visitor}
-                    onVisitorIdentified={(v) => setVisitor(v)}
-                    onAppointmentBooked={(bk) => {
-                      setVisitor((prev) =>
-                        prev
-                          ? { ...prev, name: bk.name, email: bk.email, has_booked_free_consult: 1 }
-                          : {
-                              client_id: clientId,
-                              name: bk.name,
-                              email: bk.email,
-                              country: bk.country,
-                              phone: bk.phone,
-                              visit_count: 1,
-                              has_booked_free_consult: 1,
-                              last_seen_at: new Date().toISOString(),
-                            }
-                      );
-                    }}
-                  />
-                )}
+              {currentRoute === '/contact' && (
+                <ContactSection
+                  clientId={clientId}
+                  preselectedService={preselectedService}
+                  selectedScopeServices={selectedScopeServices}
+                  mapsApiKey={mapsApiKey}
+                  onLeadSubmitted={(lead) => {
+                    setVisitor((prev) =>
+                      prev
+                        ? { ...prev, name: lead.name, email: lead.email }
+                        : {
+                            client_id: clientId,
+                            name: lead.name,
+                            email: lead.email,
+                            country: null,
+                            phone: null,
+                            visit_count: 1,
+                            has_booked_free_consult: 0,
+                            last_seen_at: new Date().toISOString(),
+                          }
+                    );
+                  }}
+                  onOpenChat={() => setChatOpen(true)}
+                  onOpenAiHub={() => navigate('/ai-hub')}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
 
-                {currentRoute === '/contact' && (
-                  <ContactSection
-                    clientId={clientId}
-                    selectedScopeServices={selectedScopeServices}
-                    mapsApiKey={mapsApiKey}
-                    onLeadSubmitted={(lead) => {
-                      setVisitor((prev) =>
-                        prev
-                          ? { ...prev, name: lead.name, email: lead.email }
-                          : {
-                              client_id: clientId,
-                              name: lead.name,
-                              email: lead.email,
-                              country: null,
-                              phone: null,
-                              visit_count: 1,
-                              has_booked_free_consult: 0,
-                              last_seen_at: new Date().toISOString(),
-                            }
-                      );
-                    }}
-                    onBookFreeCall={() => handleBookFreeCall()}
-                    onOpenChat={() => setChatOpen(true)}
-                    onOpenAiHub={() => navigate('/ai-hub')}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            <Footer onNavigate={(route) => navigate(route)} />
-          </main>
-        )}
+          <Footer onNavigate={(route) => navigate(route)} />
+        </main>
 
         <LiveChatWidget
           clientId={clientId}
@@ -266,7 +229,7 @@ export default function App() {
           advisorFingerprint={advisorFingerprint}
           open={chatOpen}
           onOpenChange={setChatOpen}
-          onBookFreeCall={() => handleBookFreeCall()}
+          onOpenEnquiry={() => handleOpenEnquiry()}
         />
       </div>
     </MotionConfig>

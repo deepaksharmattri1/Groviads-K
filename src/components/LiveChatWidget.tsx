@@ -1,4 +1,4 @@
-import { CalendarCheck2, Lock, MessageSquare, Send, Shield, X } from 'lucide-react';
+import { Lock, Mail, MessageSquare, Send, Shield, X } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { EncryptedMessageRecord } from '../types';
 import {
@@ -25,7 +25,7 @@ interface LiveChatWidgetProps {
   advisorFingerprint: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onBookFreeCall: () => void;
+  onOpenEnquiry: () => void;
 }
 
 const STORAGE_KEYPAIR_KEY = 'groviads_client_e2ee_keypair_v1';
@@ -38,7 +38,7 @@ export function LiveChatWidget({
   advisorFingerprint,
   open,
   onOpenChange,
-  onBookFreeCall,
+  onOpenEnquiry,
 }: LiveChatWidgetProps) {
   const [clientKeys, setClientKeys] = useState<{
     publicKeyJwk: JsonWebKey;
@@ -218,12 +218,12 @@ export function LiveChatWidget({
               type="button"
               onClick={() => {
                 onOpenChange(false);
-                onBookFreeCall();
+                onOpenEnquiry();
               }}
               className="inline-flex items-center gap-1 font-semibold text-[#1D4ED8] hover:text-[#1E40AF] whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <CalendarCheck2 className="w-3 h-3" />
-              Book Free Call
+              <Mail className="w-3 h-3" />
+              Send Enquiry
             </button>
           </div>
 
@@ -266,11 +266,11 @@ export function LiveChatWidget({
                   type="button"
                   onClick={() => {
                     onOpenChange(false);
-                    onBookFreeCall();
+                    onOpenEnquiry();
                   }}
                   className="font-semibold text-[#1D4ED8] underline underline-offset-2 cursor-pointer"
                 >
-                  reserve your free 30-minute consultation
+                  submit a project enquiry
                 </button>
                 .
               </p>

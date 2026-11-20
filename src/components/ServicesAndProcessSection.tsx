@@ -81,15 +81,15 @@ export function ServicesAndProcessSection({
               </h1>
               <p className="text-sm sm:text-base text-slate-300 mt-4 leading-relaxed">
                 Filter capabilities, search deliverables, or shortlist multiple service lines into a
-                custom scope brief before booking your free 30-minute discovery call.
+                custom scope brief before submitting your project enquiry.
               </p>
             </div>
             <button
               type="button"
-              onClick={onBookWithScope}
+              onClick={onEnquireWithScope}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[#1D4ED8] hover:bg-[#2563EB] text-white text-sm font-semibold whitespace-nowrap shrink-0 cursor-pointer self-start lg:self-auto"
             >
-              Book Free Consultation
+              Send Project Enquiry
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -163,7 +163,7 @@ export function ServicesAndProcessSection({
             >
               <div className="min-w-0">
                 <p className="text-xs font-mono text-[#60A5FA] mb-1">
-                  Consultation Scope Shortlist ({selectedScopeServices.length} selected)
+                  Enquiry Scope Shortlist ({selectedScopeServices.length} selected)
                 </p>
                 <p className="text-sm font-medium text-slate-100 truncate">
                   {selectedScopeServices.join(' · ')}
@@ -173,16 +173,9 @@ export function ServicesAndProcessSection({
                 <button
                   type="button"
                   onClick={onEnquireWithScope}
-                  className="px-4 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-xs font-semibold text-white whitespace-nowrap cursor-pointer"
-                >
-                  Send Brief Inquiry
-                </button>
-                <button
-                  type="button"
-                  onClick={onBookWithScope}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1D4ED8] hover:bg-[#1E40AF] text-xs font-semibold text-white whitespace-nowrap cursor-pointer"
                 >
-                  Book Free Call with Scope
+                  Send Enquiry with Scope
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -301,7 +294,7 @@ export function ServicesAndProcessSection({
                         onClick={() => onSelectServiceForBooking(service.title)}
                         className="inline-flex items-center gap-1 text-xs font-semibold text-[#0B1215] hover:text-[#1D4ED8] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                       >
-                        Book Free Review
+                        Enquire Now
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -361,8 +354,7 @@ export function ServicesAndProcessSection({
                       7-Stage Client Acquisition &amp; Delivery Process
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Every engagement begins with a complimentary 30-minute discovery
-                      consultation.
+                      Every engagement starts with a direct project enquiry and structured scope review.
                     </p>
                   </div>
                   <button
@@ -370,7 +362,7 @@ export function ServicesAndProcessSection({
                     onClick={() => onSelectServiceForBooking('Business Planning & Strategy')}
                     className="text-xs font-semibold text-[#1D4ED8] hover:text-[#1E40AF] whitespace-nowrap shrink-0 cursor-pointer self-start sm:self-auto"
                   >
-                    Start Stage 02 Free →
+                    Send Project Enquiry →
                   </button>
                 </div>
 

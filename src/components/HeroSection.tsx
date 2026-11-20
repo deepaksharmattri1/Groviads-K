@@ -1,10 +1,11 @@
 import {
   ArrowRight,
   ArrowUpRight,
-  CalendarCheck2,
+  Bot,
   CheckCircle2,
   Layers,
-  Lock,
+  Mail,
+  Send,
   ShieldCheck,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -27,52 +28,40 @@ import {
 interface HeroSectionProps {
   visitor: VisitorProfile | null;
   onNavigate: (route: AppRoute, options?: { pillar?: PillarKey; serviceTitle?: string }) => void;
-  onBookFreeCall: (serviceTitle?: string) => void;
+  onOpenEnquiry: (serviceTitle?: string) => void;
 }
 
-export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSectionProps) {
+export function HeroSection({ visitor, onNavigate, onOpenEnquiry }: HeroSectionProps) {
   const [selectedPillar, setSelectedPillar] = useState<PillarKey>('technology');
   const [comparisonMode, setComparisonMode] = useState<'unified' | 'siloed'>('unified');
-
-  const isReturningWithoutBooking =
-    visitor && visitor.visit_count > 1 && !visitor.has_booked_free_consult;
 
   const activePillarInfo = PILLARS.find((p) => p.key === selectedPillar) || PILLARS[0];
   const pillarServices = SERVICE_CATEGORIES.filter((s) => s.pillar === selectedPillar);
 
   return (
     <div>
-      {/* Contextual Returning / New Visitor Invitation Bar (non-popup, inline) */}
+      {/* Direct Global Enquiry Invitation Bar */}
       <div className="bg-[#070C0E] text-white border-b border-white/10">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-8 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm">
           <p className="text-slate-300">
-            {isReturningWithoutBooking ? (
+            {visitor?.name ? (
               <>
-                Welcome back{visitor?.name ? `, ${visitor.name}` : ''}. Your complimentary
-                30-minute strategy consultation is open to schedule.
-              </>
-            ) : visitor?.has_booked_free_consult ? (
-              <>
-                Welcome back{visitor?.name ? `, ${visitor.name}` : ''}. Manage your scheduled
-                consultation or encrypted advisor messages anytime.
+                Welcome back, {visitor.name}. Share your project goals anytime and receive a
+                tailored response within 24 hours.
               </>
             ) : (
               <>
-                Global Business Growth &amp; Technology Partner — Free 30-minute initial
-                consultation available worldwide.
+                Global Business Growth &amp; Technology Partner — Tell us your goals and receive a
+                tailored response within 24 hours.
               </>
             )}
           </p>
           <button
             type="button"
-            onClick={() =>
-              visitor?.has_booked_free_consult ? onNavigate('/dashboard') : onBookFreeCall()
-            }
+            onClick={() => onOpenEnquiry()}
             className="inline-flex items-center gap-1.5 font-semibold text-[#60A5FA] hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer self-start sm:self-auto"
           >
-            {visitor?.has_booked_free_consult
-              ? 'Open Your Activity Console'
-              : 'Reserve Free Appointment'}
+            Send Project Enquiry
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -131,11 +120,11 @@ export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSection
                 <div className="flex flex-wrap items-center gap-4 mb-10">
                   <button
                     type="button"
-                    onClick={() => onBookFreeCall()}
+                    onClick={() => onOpenEnquiry()}
                     className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-lg bg-[#1D4ED8] hover:bg-[#2563EB] text-white font-semibold text-sm sm:text-base transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   >
-                    <CalendarCheck2 className="w-4 h-4" />
-                    Schedule Free Discovery Call
+                    <Send className="w-4 h-4" />
+                    Send Project Enquiry
                   </button>
                   <button
                     type="button"
@@ -243,8 +232,8 @@ export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSection
                           <button
                             key={svc.id}
                             type="button"
-                            onClick={() => onBookFreeCall(svc.title)}
-                            aria-label={`Book free review for ${svc.title}`}
+                            onClick={() => onOpenEnquiry(svc.title)}
+                            aria-label={`Send enquiry for ${svc.title}`}
                             className="text-left rounded-lg bg-[#070C0E] hover:bg-[#15232B] border border-white/10 hover:border-[#60A5FA]/50 p-3 transition-colors cursor-pointer group flex flex-col justify-between"
                           >
                             <div className="flex items-center justify-between gap-1 mb-1">
@@ -277,15 +266,15 @@ export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSection
             <div>
               <p className="font-display text-2xl font-bold text-white tabular-nums">24 Hours</p>
               <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                Target advisory follow-up across all global time zones after enquiry or booking
+                Target advisory follow-up across all global time zones after every project enquiry
               </p>
             </div>
             <div>
               <p className="font-display text-2xl font-bold text-[#60A5FA] tabular-nums">
-                Free 30m
+                Direct Enquiry
               </p>
               <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                Initial discovery consultation to evaluate goals before recommending any scope
+                Structured project assessment with a tailored written scope before any build
               </p>
             </div>
             <div>
@@ -357,7 +346,7 @@ export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSection
                   <>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-[#1D4ED8] shrink-0 mt-0.5" />
-                      <span>Direct tracking from paid/search click to database lead and booking.</span>
+                      <span>Direct tracking from paid/search click to database lead and reply.</span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-[#1D4ED8] shrink-0 mt-0.5" />
@@ -365,7 +354,7 @@ export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSection
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-[#1D4ED8] shrink-0 mt-0.5" />
-                      <span>Automated lead triage and calendar reservation with zero dropped inquiries.</span>
+                      <span>Automated lead triage and direct advisory response with zero dropped enquiries.</span>
                     </li>
                   </>
                 ) : (
@@ -480,7 +469,7 @@ export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSection
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed mb-5">
                   Search all 9 service divisions, shortlist deliverables tailored to your stage, and
-                  carry your scope directly into a free discovery session.
+                  carry your scope directly into our project enquiry form.
                 </p>
               </div>
               <button
@@ -495,42 +484,42 @@ export function HeroSection({ visitor, onNavigate, onBookFreeCall }: HeroSection
 
             <div className="rounded-xl bg-white border border-slate-200 p-6 flex flex-col justify-between">
               <div>
-                <CalendarCheck2 className="w-5 h-5 text-[#1D4ED8] mb-3" />
+                <Bot className="w-5 h-5 text-[#1D4ED8] mb-3" />
                 <h3 className="font-display text-lg font-bold text-[#0B1215] mb-1.5">
-                  Automated Calendar Booking
+                  AI Advisory &amp; Maps Hub
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed mb-5">
-                  Check real-time availability across 9 global time zones, lock your free 30-minute
-                  appointment, download an `.ics` invite, or manage existing bookings.
+                  Scope technical architectures with our multi-turn AI advisor, verify market data
+                  with Google Search, and explore global hubs with Google Maps.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => onNavigate('/consultation')}
+                onClick={() => onNavigate('/ai-hub')}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8] hover:text-[#1E40AF] cursor-pointer self-start"
               >
-                Open Consultation Page
+                Open AI Advisory Hub
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
             <div className="rounded-xl bg-white border border-slate-200 p-6 flex flex-col justify-between">
               <div>
-                <Lock className="w-5 h-5 text-[#1D4ED8] mb-3" />
+                <Mail className="w-5 h-5 text-[#1D4ED8] mb-3" />
                 <h3 className="font-display text-lg font-bold text-[#0B1215] mb-1.5">
-                  Activity Console &amp; E2EE Desk
+                  Project Enquiry Form
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed mb-5">
-                  Review tracked client analytics, pipeline inquiries, scheduled appointments, email
-                  alerts, and browser-decrypted ECDH P-256 conversations.
+                  Share your business goals, technical requirements, and timeline directly—no
+                  registration needed, with a direct advisory response within 24 hours.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => onNavigate('/dashboard')}
+                onClick={() => onNavigate('/contact')}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8] hover:text-[#1E40AF] cursor-pointer self-start"
               >
-                Open Dashboard Console
+                Open Enquiry Form
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

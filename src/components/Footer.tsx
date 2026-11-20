@@ -35,9 +35,7 @@ export function Footer({ onNavigate }: FooterProps) {
               { route: '/services' as AppRoute, label: 'Services & Process' },
               { route: '/portfolio' as AppRoute, label: 'Solution Blueprints' },
               { route: '/ai-hub' as AppRoute, label: 'AI Advisory Hub' },
-              { route: '/consultation' as AppRoute, label: 'Free Consultation' },
-              { route: '/contact' as AppRoute, label: 'Contact & Project Enquiry' },
-              { route: '/dashboard' as AppRoute, label: 'Executive & Client Console' },
+              { route: '/contact' as AppRoute, label: 'Project Enquiry Form' },
             ].map((item) => (
               <a
                 key={item.route}
